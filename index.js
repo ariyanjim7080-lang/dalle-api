@@ -1,39 +1,31 @@
-const express = require("express");
-const axios = require("axios");
+import express from "express";
+import OpenAI from "openai";
+import cors from "cors";
 
 const app = express();
-const API_KEY = "2fe137fbb84be28bf3d00347676528d0";
+app.use(cors());
+app.use(express.json());
 
-app.get("/upload", async (req, res) => {
+const openai = new OpenAI({
+  apiKey: "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" // তোম
+});
+
+app.post("/generate", async (req, res) => {
   try {
-    const imageUrl = req.query.url;
-    if (!imageUrl) {
-      return res.status(400).json({ error: "No image URL provided" });
-    }
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Prompt required" });
 
-    const response = await axios.post(
-      `https://api.imgbb.com/1/upload?key=${API_KEY}`,
-      new URLSearchParams({ image: imageUrl }).toString(),
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    );
-
-    res.json({
-      success: true,
-      url: response.data.data.url,
-      delete_url: response.data.data.delete_url
+    const result = await openai.images.generate({
+      model: "gpt-image-1",
+      prompt,
+      size: "512x512"
     });
+
+    res.json({ image_url: result.data[0].url });
   } catch (err) {
-    console.error(err.response?.data || err.message);
-    res.status(500).json({
-      success: false,
-      error: err.response?.data || err.message
-    });
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("ImgBB GET API running");
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(3000, () => console.log("🚀 Running on http://localhost:3000"));
